@@ -1,7 +1,8 @@
-import { moment} from './modules'
+import moment = require('moment');
 import * as mysql from 'mysql';
-//const Auth = require('../auth/auth.js')
-import { Auth } from '../auth/auth.js';
+//const Auth = require('./auth/auth.js')
+// @ts-ignore
+import { Auth } from './auth/auth.js';
 
 export class Mysql {
 
@@ -12,10 +13,8 @@ export class Mysql {
 		password: Auth.mysql.password
 	});
 	
-	public static init() {
-		Mysql.con.connect();
-		setInterval(() => { Mysql.query("Select 1")}, 30000)
-	}
+	public static init() { setInterval(() => { Mysql.query('select 1')
+	}, 30000)}
 	
 	private static readCount = 0;
 	private static writeCount = 0;
@@ -35,9 +34,12 @@ export class Mysql {
 
 
 	public static query(query : string){
-		//let ts = Date.now();
+		// let ts = Date.now();
+		// console.log(query)
+		// console.log(query)
 		return new Promise((result, fail) => {module.exports.writecount += 1;
-			Mysql.con.query(query, function (error, results : any, fields) {
+			Mysql.con.query(query, function (error, results: any, fields) {
+				
 				if (error !== null) {
 					Mysql.errorCount += 1;
 					console.log(moment(Date.now()).format(), error, query);
@@ -50,6 +52,5 @@ export class Mysql {
 			});
 		});
 	}
-
 
 }

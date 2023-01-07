@@ -11,6 +11,7 @@ export class Youtube {
 				method: 'GET',
 			};
 			request(options, function (error: any, response: any, body: any) {
+				console.log(response, body)
 				if (response && response.statusCode === 200) {
 					if (body != "") {
 						//module.exports.event.emit("getData", [type, {}, body.length]);

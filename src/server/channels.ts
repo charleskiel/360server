@@ -1,8 +1,12 @@
-import { MusicVideo, request, Mysql, moment, DownloadFile, SocketCommands, EventEmitter2, Vote } from '../modules'
+import { MusicVideo, request, Mysql, moment, DownloadFile, SocketCommands, Vote } from '../modules'
 
 
 export class Channel {
 	static channels: Channel[] = []
+
+	static status() {
+		return { "channels" : Channel.channels}
+	}
 
 	static tickHandler(msg: any) {
 		switch (msg.type) {
@@ -19,7 +23,9 @@ export class Channel {
 			default:
 				break;
 		}
-	};
+		
+	}
+	
 	public name: string;
 	public onAir = true;
 	public dayOffset = 0;
@@ -94,6 +100,7 @@ export class Channel {
 		this.pcRating = data.pcRating
 		console.log(this)
 	}
+
 
 }
 

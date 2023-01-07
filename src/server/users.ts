@@ -1,45 +1,19 @@
-import { MusicVideo, request, Mysql, moment, DownloadFile, SocketCommands, EventEmitter2 } from './modules';
-export {  };
+import { MusicVideo, request, Mysql, moment, DownloadFile, SocketCommands, userEvent } from '../modules';
 
-
-let UserEvent = new EventEmitter2();
-let users : [User] 
 
 export class User {
-	role : User.Role
+	static users = new Map()
+
+	static login(data: any) {
+		let u: User
+		User.users.set(data.regtoken, new User(data.regtoken, data.role, data._class, data.socket))
+	}
 	viewing: boolean = false
-	
-	constructor(public socket: any) {
-		this.role = User.Role.User
-	}
-}
 
-export class PowerUser extends User {
-	constructor(public socket: any) {
-		super(socket)
-		this.role = User.Role.PowerUser
-	}
-}
-
-export class SuperUser extends PowerUser {
-	constructor(public socket: any) {
-		super(socket);
-		this.role = User.Role.SuperUser
-	}
-}
-
-export class Admin  extends SuperUser {
-	constructor(public socket: any) {
-		super(socket);
-		this.role = User.Role.Admin
-	}
-}
-
-export namespace User {
-	export enum Role {
-		User,
-		PowerUser,
-		SuperUser,
-		Admin
-	}
+	constructor(
+		public regtoken: string,
+		public role: string,
+		public _class: string,
+		public socket: any,
+	) {}
 }

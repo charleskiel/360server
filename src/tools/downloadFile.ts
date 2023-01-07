@@ -1,4 +1,4 @@
-import { moment, request } from '../modules';
+import {request } from '../modules';
 const fs = require('fs');
 
 
@@ -22,7 +22,7 @@ export class DownloadFile {
 				},
 				gzip: true
 			})
-			.pipe(fs.createWriteStream('./' + filename + 'jpg'))
+			.pipe(fs.createWriteStream('./' + filename ))
 			.on('finish', () => {
 				console.log(`The file is finished downloading.`);
 				resolve("OK");
