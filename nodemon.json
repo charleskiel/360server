@@ -1,7 +1,7 @@
 {
-	"watch": ["src"],
-	"ext": "ts",
-	"ignore": ["src/public"],
-	"execOld": "NODE_ENV=development ts-node src/app.ts",
-	"exec": "ts-node src/app.ts"
+	"verbose": true,
+	"watch": ["src/**/*.*"],
+	"execMap": {
+		"ts" : "node --inspect=0.0.0.0:9222  --nolazy -r ts-node/register src/app.ts"
+	}
 }

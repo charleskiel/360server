@@ -1,14 +1,12 @@
-import { MusicVideo, request, Mysql, _ } from '../modules'
+import { MusicVideo, request, Sql, _ } from '../modules'
 
 export class Library {
 	static videos = new Map();
-	static load() {
+	
+	static allVideos() {
 		console.log("Loading Videos");
-		Mysql.query(`select * from videos order by id, altId`).then((results : any) => {
-			_.valuesIn(results).map((video: any) => {
-			 	Library.videos.set(video.id,new MusicVideo(video));
-			});
-			console.log(Library.videos.size + " music videos loaded.")
+		Sql.query(`select * from [360].[videos] order by id, altId`).then((results : any) => {
+			console.table(results)
 		});
 	}
 

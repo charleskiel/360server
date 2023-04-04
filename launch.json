@@ -1,0 +1,24 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "attach",
+            "name": "Docker launch debugging",
+            "runtimeExecutable": "docker-compose",
+            "runtimeArgs": ["up"],
+            "port": 9222,
+            "restart": true,
+            "timeout": 600000,
+            "localRoot": "${workspaceFolder}/dist",
+            "remoteRoot": "/app/dist",
+            "outFiles": ["${workspaceFolder}/dist/**/**.js"],
+            "skipFiles": ["<node_internals>/**/*.js"],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "sourceMaps": true,
+		  "protocol" : "inspector",
+		  "address": "192.168.1.222"
+        }
+    ]
+}

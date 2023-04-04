@@ -1,4 +1,10 @@
-auth
+src/auth
 node_modules
 site
 build
+dist
+.idea
+bin
+.vs
+.vscode
+obj

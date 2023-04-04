@@ -1,10 +1,10 @@
-const moment = require('moment')
-var _ = require('lodash')
-const os = require('os')
-var EventEmitter2 = require("eventemitter2");
+import moment from 'moment';
+import _ from 'lodash';
+import os from 'os';
+import EventEmitter2 from "eventemitter2";
 
 
-let event = new EventEmitter2({
+const event = new EventEmitter2({
 	wildcard: true,
 	delimiter: ".",
 	newListener: false,
@@ -12,31 +12,26 @@ let event = new EventEmitter2({
 	verboseMemoryLeak: false,
 	ignoreErrors: false,
 });
-module.exports.event = event;
+const _event = event;
+export { _event as LocalSocketEvent };
 
 let status = {};
 
-module.exports.load = () => { };
+export function load() { }
 
-var net = require('net')
-module.exports.server = net.createServer()
-var port = 5001
-var socketNum = 0;
+import { createServer } from 'net';
+export const server = createServer()
+var port = 8765
 var serverSockets = Object.create(null);
 
-module.exports.server.listen(port, function () {
-	console.log(`Controller port listening on : ${module.exports.server.address().port}`)
-})
-
-module.exports.server.on("connection", function (socket) {
-	console.log(`Connection from ${socket.remoteAddress}`)
+server.on("connection", function (socket) {
+	console.log(`MM Local Socket Connection from ${socket.remoteAddress}`)
 	socket.id = Math.random().toString(16).substring(2, 10).toUpperCase();
 
 	serverSockets[socket.id] = socket;
-
+	event.emit("connection", socket.remoteAddress)
 	socket.on("data", function (d) {
-		//console.log(serverSockets[socket.id].remoteAddress)
-		console.log(`${d}`)
+		// console.log(serverSockets[socket.id].remoteAddress, `${d}`)
 		if (d.includes('GET / HTTP/1.1')) {
 			//socket.write(`Got from ${socket.remoteAddress + ":" + socket.remotePort}: ${d}`)
 			console.log(`Got from ${socket.remoteAddress + ":" + socket.remotePort}: ${d}`)
@@ -52,14 +47,16 @@ module.exports.server.on("connection", function (socket) {
 				else {
 					d = [`${d}`]
 				}
-				d.map(p => {
-					//console.log(p)
+
+				d.forEach(p => {
+					// console.log(p)
 					//if (!p.toString().includes("GET / HTTP/1.1")) p = JSON.parse(p)
-					event.emit("msg", {socketId : socket.id, data: p })
+					event.emit("msg", JSON.parse(p))
 					//console.log(status)
 				})
+
 			} catch (e) {
-				console.log(e); // error in the above string (in this case, yes)!
+				console.log(d, e); // error in the above string (in this case, yes)!
 			}
 		}
 	})
@@ -77,10 +74,14 @@ module.exports.server.on("connection", function (socket) {
 	})
 })
 
+server.listen(port, function () {
+	console.log(`MM Server port listening on : ${server.address().port}`)
+})
 
-module.exports.sendTo = (message, socketId = null) => {
+
+export function Multicast(message, socketId = null) {
 	if (socketId) {
-		console.log(`Sending to ${serverSockets[socketId].id} ${serverSockets[socketId].remoteAddress} :::  ${JSON.stringify(message)}`)
+		// console.log(`Sending to ${serverSockets[socketId].id} ${serverSockets[socketId].remoteAddress} :::  ${JSON.stringify(message)}`)
 		serverSockets[socketId].write(JSON.stringify(message))
 	} else {
 		for (const con in serverSockets) {
@@ -101,34 +102,8 @@ module.exports.sendTo = (message, socketId = null) => {
 // }
 
 
-
-
-setInterval(function () {
-	//console.log(" Ping Controller every 1 seconds ")
-
-	status = {
-		type: 'systemStatus',
-		data: {
-			app: {
-			},
-			system: {
-				freemem: os.freemem(),
-				totalmem: os.totalmem(),
-				uptime: os.uptime(),
-				loadavg: os.loadavg(),
-				epoch: Date.now()
-			}
-		}
-	}
-
-	//event.emit("serverStatus", status)
-	module.exports.sendTo(status)
-
-}, 500)
-
-
-event.on("*", function () {
-
+event.on("*", function (msg) {
+	// console.log(msg)
 	// for (const record in serverSockets) {
 	// 	if (serverSockets[record].role = "indicator" ) {
 	// 		serverSockets[record].write(

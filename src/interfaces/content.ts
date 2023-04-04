@@ -34,6 +34,9 @@ export class MusicVideo extends Content {
 		this.titleOut = data.titleOut;
 		this.rating = data.rating;
 	}
+	toString() :string {
+		return `${this.artist} - ${this.title}`
+	}
 }
 
 export class Bump extends Content {
@@ -45,6 +48,7 @@ export class Bump extends Content {
 export class Break extends Content {
 	//song: Song
 	constructor(data: any) {
+		console.log(data)
 		super(Content.ContentType.Break, data.id, data.altId, data.trt);
 		//this.song = data.song
 	}

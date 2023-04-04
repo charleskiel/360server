@@ -1,0 +1,33 @@
+version: "3.7"
+
+services:
+  ts-node-docker:  # service name
+    build:
+      context: .
+      dockerfile: dockerfile.dev
+      target: base
+    volumes:
+      - .:/app
+      - /var/www/360tv.net:/var/www/360tv.net
+      - ./nodemon.json:/home/node/app/nodemon.json  
+      - /etc/letsencrypt:/etc/letsencrypt
+
+    container_name: 360server
+    expose:
+      - "5000"
+      - "5001"
+      - "5002"
+      - "5003"
+      - "5004"
+      - "9000"
+      - "8765"
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+      - "5002:5002"
+      - "5003:5003"
+      - "5004:5004"
+      - "9222:9222" # debug port node for inspect-brk
+      - "9000:9000" # debug port node for inspect-brk
+      - "8765:8765" # debug port node for inspect-brk
+    command: npm run dev  # debugging command
