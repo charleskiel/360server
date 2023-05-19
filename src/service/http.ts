@@ -1,4 +1,5 @@
 import { Sql, Runlog, nginxEvent, RokuAPI, Library, API, Channel, User, request } from '../modules'
+import { DashboardAPI } from '../api/dashboard';
 import express from 'express'
 import http from 'http';
 import { isNull, rest } from 'lodash';
@@ -43,6 +44,22 @@ export class HTTP {
 		
 		httpApp.all('/api/v2/roku/*', (req, res) => {
 			RokuAPI.call(req)
+				.then(result => {
+					if (result.length > 0) {
+						
+						res.status(200)
+						res.json(result);
+					} else { 
+						res.status(500);
+						res.json(result);
+					}
+				})
+				.catch(err => { res.json(err); })
+		});
+		
+		
+		httpApp.all('/api/dashboard/*', (req, res) => {
+			DashboardAPI.call(req)
 				.then(result => {
 					if (result.length > 0) {
 						
@@ -108,7 +125,7 @@ export class HTTP {
 					}
 				};
 
-				console.log(JSON.stringify(`${domain !== '' ? domain : req.headers['x-real-ip']} ::: [${req.method}] ---> ${data.data.url}`));
+				console.log( Date.now(),  JSON.stringify(`${domain !== '' ? domain : req.headers['x-real-ip']} ::: [${req.method}] ---> ${data.data.url}`));
 				// Sql.query(`INSERT INTO sitelog (url,params,query,path,ip,domain,timestamp) VALUES ('${data.data.url}','${data.data.params}','${data.data.query}','${data.data.path}','${req.headers['x-real-ip']}','${data.data.domain}', now());`);
 			});
 		}
