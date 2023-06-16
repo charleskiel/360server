@@ -17,6 +17,7 @@ export { Library } from './server/library'
 export { User } from './server/users'
 export { RokuAPI } from './api/Roku/roku'
 export { HTTP } from './service/http'
+import WebSocketClient from './service/socket/WebSocketClient';
 
 const websiteEvent = new EventEmitter2({ wildcard: true });
 const nginxEvent = new EventEmitter2({ wildcard: true });
@@ -26,7 +27,7 @@ const channelEvent = new EventEmitter2({ wildcard: true });
 const contentEvent = new EventEmitter2({ wildcard: true });
 const viewEvent = new EventEmitter2({ wildcard: true });
 const remoteControlEvent = new EventEmitter2({ wildcard: true });
-export { websiteEvent, nginxEvent,controllerEvent, userEvent, channelEvent,contentEvent,viewEvent,remoteControlEvent,moment, _ }
+export { WebSocketClient, websiteEvent, nginxEvent,controllerEvent, userEvent, channelEvent,contentEvent,viewEvent,remoteControlEvent,moment, _ }
 
 export namespace utils {
 	export function generateId() : string {

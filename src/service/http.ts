@@ -1,19 +1,26 @@
-import { Sql, Runlog, nginxEvent, RokuAPI, Library, API, Channel, User, request } from '../modules'
+import { Sql, Runlog, nginxEvent, RokuAPI, Library, API, Channel, User, request , WebSocketClient} from '../modules'
 import { DashboardAPI } from '../api/dashboard';
 import express from 'express'
 import http from 'http';
 import { isNull, rest } from 'lodash';
 import { resourceLimits } from 'worker_threads';
 import { Console } from 'console';
+const cors = require('cors');
+const geoip = require('geoip-lite');
 
 const dns = require('dns');
 const httpApp = express()
 const httpPort = 5000
 
+
+
 export class HTTP {
+	static domainLocations = new Map();
 
 	static init(){
 		httpApp.set('trust proxy', true);
+		httpApp.use(cors());
+
 		httpApp.use((req, res, next) => {
 			HTTP.log(req, res, next);
 			res.header("Access-Control-Allow-Origin", "*");
@@ -53,27 +60,25 @@ export class HTTP {
 						res.json(result);
 					}
 				})
-				.catch(err => { res.json(err); })
+				.catch(err => {
+					console.log(err);
+					 res.json(err); })
 		});
 		
 		
 		httpApp.all('/api/dashboard/*', (req, res) => {
+			// console.log(req)
 			DashboardAPI.call(req)
 				.then(result => {
-					if (result.length > 0) {
-						
-						res.status(200)
-						res.json(result);
-					} else { 
-						res.status(500);
-						res.json(result);
-					}
+					res.status(200)
+					res.json(result);
 				})
 				.catch(err => { res.json(err); })
 		});
 		
 		
 		httpApp.post('/api/v2/login', (req, res) => { res.json(User.login(req)); })
+		httpApp.post('/api/v2/googleLogin', (req, res) => { res.json(User.googleLogin(req)); })
 
 		httpApp.get('/nginx/connect', (req, res) => {HTTP.nginxEventEmit("connect", req); res.send("OK"); });
 		httpApp.get('/nginx/on_connect', (req, res) => {HTTP.nginxEventEmit("on_connect", req); res.send("OK"); });
@@ -105,10 +110,15 @@ export class HTTP {
 
 	static log(req :any, res :any, next :any) {
 		const url = decodeURI(req.originalUrl);
+		const ingoreUrls = [
+			"channelStatus?channel",
+			"api/dashboard/viewers"
+		]
 
-		if (!url.includes("channelStatus?channel")) {
+		if (!url.includes("channelStatus?channel") && !url.includes("api/dashboard/") && !JSON.stringify(req.headers['x-real-ip']).includes("192.168.1.") ) {
 			let domain: string = '';
-			dns.reverse(`${req.headers['x-real-ip']}`, (err: NodeJS.ErrnoException | null, domains: string[]) => {
+			// console.log(req.headers['x-real-ip']);
+			if (req.headers['x-real-ip']) dns.reverse(`${req.headers['x-real-ip']}`, (err: NodeJS.ErrnoException | null, domains: string[]) => {
 				if (domains?.length > 0) { domain = domains[0]; }
 
 				const data = {
@@ -124,7 +134,14 @@ export class HTTP {
 					}
 				};
 
-				console.log( Date.now(),  JSON.stringify(`${domain !== '' ? domain : req.headers['x-real-ip']} ::: [${req.method}] ---> ${data.data.url}`));
+				console.log(Date.now(), JSON.stringify(`${domain !== '' ? domain : req.headers['x-real-ip']} ::: [${req.method}] ---> ${data.data.url}`));
+				if (!this.domainLocations.has(req.headers['x-real-ip'])) {
+					this.domainLocations.set(req.headers['x-real-ip'], geoip.lookup(req.headers['x-real-ip']))
+					this.domainLocations.set(req.headers['x-real-ip'], geoip.lookup(req.headers['x-real-ip']))
+					// console.log(this.domainLocations.get(req.headers['x-real-ip']))
+					console.log(this.domainLocations)
+				}
+				WebSocketClient.Send(JSON.stringify(`${domain !== '' ? domain : req.headers['x-real-ip']} ::: [${req.method}] ---> ${data.data.url}`));
 				// Sql.query(`INSERT INTO sitelog (url,params,query,path,ip,domain,timestamp) VALUES ('${data.data.url}','${data.data.params}','${data.data.query}','${data.data.path}','${req.headers['x-real-ip']}','${data.data.domain}', now());`);
 			});
 		}

@@ -1,13 +1,16 @@
-import { MusicVideo, request, Sql, moment, User, Channel, Content, Runlog, LogEntry, Library } from '../../modules';
+import { MusicVideo, request, Sql, moment, User, Channel, Content, Runlog, LogEntry, Library, WebSocketClient } from '../../modules';
 import { Auth } from '../../auth/auth.js';
 import { result, toUpper } from 'lodash';
 import Poster from './SceneGraph/Components/Poster';
 import Label from './SceneGraph/Components/Label';
 import OpenWeather from '../weather';
+import exp from 'constants';
 
 export class RokuAPI {
 	private static channels: any = {};
 	private static timer: NodeJS.Timeout;
+	static currentVersion: string = '0.9.1';
+	static currentBuild: string = 'Jun-12-2023 9:49AM';
 
 	public static async init() {
 		const channels: any = await Sql.query('SELECT * FROM channels');
@@ -99,9 +102,20 @@ export class RokuAPI {
 	public static defaultResponse = { defaultResponse: "OK" };
 
 	public static call(urlParams: any): Promise<any> {
-
 		return new Promise((ok, fail) => {
 			const postBody = urlParams.body;
+			const clientIp : string = urlParams.headers['x-real-ip']
+			// Change the color of this console background to yellow and the text to black
+			// console.log(`${clientIp} ${urlParams.method} ${urlParams._parsedUrl.pathname}`);
+			if (clientIp.includes("192.168.1.")){
+				// console.log(`\u001b[32m${clientIp} ${urlParams.method} ${urlParams._parsedUrl.pathname}\u001b[0m`);
+			}else{
+				console.log(`\u001b[33m${clientIp} ${urlParams.method} ${urlParams._parsedUrl.pathname}\u001b[0m`);
+			}
+
+
+
+			WebSocketClient.Send(postBody)
 
 
 			if (urlParams.method === 'POST') {
@@ -128,23 +142,22 @@ export class RokuAPI {
 							});
 						break;
 					case "/api/v2/roku/votepost":
+
+						console.log(`\u001b[31m ${urlParams._parsedUrl.pathname}  =>>>> to backend\u001b[0m`);
+						this.passToBackend(urlParams).then((result: any) => {
+							ok(result);
+						});
+						break;
 					case "/api/v2/roku/viewpost":
-						// console.log(`\u001b[31m ${urlParams._parsedUrl.pathname}  =>>>> to backend\u001b[0m`);
-						// this.passToBackend(urlParams).then((result: any) => {
-						// 	ok(result);
-						// });
 						RokuAPI.viewpost(postBody)
-							.then(resp => {
-								// console.log(resp)
-								ok(resp);
-							})
+							.then(resp => {ok(resp)})
 							.catch(err => {
 								console.log(`\u001b[31m \x1b[5m \x1b[7m${postBody.esn} ::: ${err}\u001b[0m`);
 								fail(err);
 							});
 						break;
 					default:
-						// console.log(`\u001b[31m \x1b[5m \x1b[7m Sending defult response for ${urlParams._parsedUrl.pathname} "\u001b[0m to ${postBody.esn}\u001b[0m`);
+						console.log(`\u001b[31m \x1b[5m \x1b[7m Sending defult response for ${urlParams._parsedUrl.pathname} "\u001b[0m to ${postBody.esn}\u001b[0m`);
 						ok(RokuAPI.defaultResponse);
 						break;
 				}
@@ -158,7 +171,7 @@ export class RokuAPI {
 						ok(RokuAPI.channels);
 						break;
 					default:
-						// console.log("`\u001b[31m \x1b[5m \x1b[7m Default response =>>>>" + urlParams._parsedUrl.pathname + "\u001b[0m");
+						console.log("`\u001b[31m \x1b[5m \x1b[7m Default response =>>>>" + urlParams._parsedUrl.pathname + "\u001b[0m");
 						ok(RokuAPI.defaultResponse);
 						break;
 				}
@@ -169,7 +182,7 @@ export class RokuAPI {
 
 	static viewpost(post: any) {
 		var playId = post.playId;
-
+		const serverEpoch = Date.now()
 		return new Promise((result: any, fail: any) => {
 			console.log(post);
 
@@ -194,17 +207,17 @@ export class RokuAPI {
 			SET @streamDelay := ${this.channels[post.channelNumber].streamDelay};
   
 			SELECT 
-			unix_timestamp() * 1000,
 			((unix_timestamp() *1000) - runlog.datetime) / 1000  as startedSecondsAgo ,
 			(runlog.datetime / 1000) + runlog.trt - unix_timestamp() + @streamDelay as SecondsLeft ,
 			
-			unix_timestamp() * 1000 as serverEpoch,
 			(unix_timestamp() + @streamDelay) * 1000 as playerepochDelay,
 			runlog.datetime as contentEpoch,
 			runlog.datetime + (runlog.trt * 1000) as contentEndEpoch,
+			unix_timestamp() * 1000 as serverEpoch,
 			from_unixtime(unix_timestamp()) as serverDatetime,
 			from_unixtime(unix_timestamp() - @streamDelay) as playerDatetimeDelay,
 			from_unixtime(runlog.datetime / 1000) as contentdatetime,
+			runlog.trt as runlogtrt,
 			runlog.*,
 			videos.*,
 			(CASE
@@ -213,7 +226,7 @@ export class RokuAPI {
 				WHEN runlog.contenttype = 2 THEN CONCAT(runlog.contentId," : ",runlog.trt)
          		END) as contentString
 			from runlog 
-			left join videos on runlog.contentid = videos.id and runlog.contenttype = 0
+			left join videos on runlog.contentid = videos.id
 			where runlog.channel = ${post.channelNumber} having SecondsLeft > 0
 			order by runlog.datetime asc
 			limit 2;`;
@@ -222,12 +235,17 @@ export class RokuAPI {
 			Sql.query(statussql)
 				.then((dataTable : any) => {
 					const r = {
-						serverEpoch : Date.now(),
-						playerEpoch: Date.now() - (this.channels[post.channelNumber].streamDelay * 1000),
+						serverEpoch: dataTable[1].length > 0 ? dataTable[1][0].serverEpoch : Date.now(),
+						playerEpoch: dataTable[1].length > 0
+							? dataTable[1][0].serverEpoch - (this.channels[post.channelNumber].streamDelay * 1000)
+							: Date.now() - (this.channels[post.channelNumber].streamDelay * 1000),
 						playId: playId,
 						nowPlaying: dataTable[1],
-						channels: this.channels
-					}
+						channels: this.channels,
+						latestVersion : this.currentVersion,
+						latestBuild : this.currentBuild,
+					};
+
 					console.log(r)
 					result(r);
 				})
@@ -277,34 +295,67 @@ export class RokuAPI {
 	}
 
 	public static async generateOverlays(post: any): Promise<object> {
-		// console.log(post);
+		console.log(post);
 		const overlays: any[] = [];
+		var expires = 0;
 		var duration = 0;
 		var loop = false;
 		const overlayName = post["overlay"].toUpperCase();
+		let weatherData;
+		let weatherInfoFont = "tmp:/fonts/COURBD.TTF";
+		console.log("Gnerating overlays for video mode " + post.overlay)
 		switch (overlayName) {
-			case '360':
-				overlays.push(new Poster(0, 0, "https://www.360tv.net/roku/theme/overlays/360.png"));
-				break;
+		
 			case 'LATE':
-				overlays.push(new Poster(0, 0, "https://www.360tv.net/roku/theme/overlays/LATE.png"));
+				overlays.push(new Poster(0, 0, "https://www.360tv.net/roku/theme/overlays/LATE.png", 1280, 720));
 				break;
+			case 'HOT100':
 			case 'WEEKEND':
-				overlays.push(new Poster(0, 0, "https://www.360tv.net/roku/theme/overlays/WEEKEND.png"));
+				overlays.push(new Poster(0, 0, "https://www.360tv.net/roku/theme/overlays/WEEKEND.png", 1280, 720));
 				break;
 			case 'VOTE':
 				break;
+			case '360':
+				// overlays.push(new Poster(0, 0, "https://www.360tv.net/roku/theme/overlays/360.png", 1280, 720));
+				// break;
 			case 'DAY':
-			case 'W':
-				let leftMarg = 100;
-				let y = 100;
-				let weatherInfoFontSize = 24;
-				let weatherInfoFont = "tmp:/fonts/COURBD.TTF";
-				let lineSpacing = 60;
-				const weatherData = await OpenWeather.getData();
-				overlays.push(new Label(leftMarg, 100, 12, `lat ${weatherData.lat}`, weatherInfoFont));
-				overlays.push(new Label(leftMarg, 100, 12, `lon ${weatherData.lon}`, weatherInfoFont));
+				expires = Date.now() + (60000 * 5);
 
+				weatherData = await OpenWeather.getData(post);
+				let fontSize = 20;
+				let x = 970;
+				overlays.push(new Poster(0, 0, "https://www.360tv.net/roku/theme/overlays/360.T.png", 1280, 720));
+				overlays.push(new Poster(x - 5, 610, `https://openweathermap.org/img/wn/${weatherData.current.weather[0].icon}.png`, 50, 50));
+				overlays.push(new Label( x, 600, fontSize, `${Math.round(weatherData.current.temp)}F`, weatherInfoFont));
+				break;
+				
+			case 'INFO':
+			case 'W':
+				//expires = Date.now() + 60000;
+				expires = -1;
+				let leftMarg = 280;
+				let indent = 10;
+				let y = 130;
+				let weatherInfoFontSize = 22;
+				let lineSpacing = 36;
+				weatherData = await OpenWeather.getData(post);
+				const iconSize = 50;
+
+				overlays.push(new Label(leftMarg, y, 32, `Local weather info for ${weatherData.location.name} ${weatherData.location.state}`, "tmp:/fonts/COURBD.TTF"));
+				const todayFormattedSunrise = new Date(weatherData.current.sunrise * 1000).toISOString().slice(0, 19).replace('T', ' ');
+				const todayFormattedSunset = new Date(weatherData.current.sunset * 1000).toISOString().slice(0, 19).replace('T', ' ');
+				y += 40;
+				[
+					`${post.user.regtoken === "000000000000" ? "[DEFAULT] " : ""} [${weatherData.location.lat} : ${weatherData.location.lon}]`,
+					`Sunrise: ${todayFormattedSunrise} // Sunset: ${todayFormattedSunset}`,
+					`Currently: ${weatherData.current.temp}°F  //  Feels like: ${weatherData.current.feels_like}°F`,
+					`Humidity: ${weatherData.current.humidity}%`].forEach((element, i) => {
+						overlays.push(new Label(leftMarg, y, 12, element, weatherInfoFont));
+						y += 15;
+				});
+
+				y += 20;
+				// overlays.push(new Label(leftMarg + 80, y, weatherInfoFontSize, `${weatherData.current.temp}`, weatherInfoFont));
 				weatherData.daily.forEach((dailyData: any) => {
 					const { regtoken, dt, sunrise, sunset, moonrise, moonset, moon_phase, moon_phase_lunation, temp, feels_like, pressure, humidity, dew_point, wind_speed, wind_deg, wind_gust, weather, clouds, pop, rain, snow, uvi } = dailyData;
 
@@ -320,45 +371,57 @@ export class RokuAPI {
 					// Extract weather details
 					const { id: weatherId, main: weatherMain, description: weatherDescription, icon: weatherIcon } = weather[0];
 
-					overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `${dayOfWeekAbbreviation }`, weatherInfoFont));
-					overlays.push(new Poster(leftMarg + 80, y, `https://openweathermap.org/img/wn/${weatherIcon}@2x.png`));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `timezone ${weatherData.data.timezone}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `sunrise ${formattedSunrise}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `sunset ${formattedSunset}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `moonrise ${formattedMoonrise}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `moonset ${formattedMoonset}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `moon_phase ${moon_phase}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `temp_morn ${temp.morn}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `temp_day ${temp.day}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `temp_eve ${temp.eve}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `temp_night ${temp.night}`, weatherInfoFont));
-					overlays.push(new Label(leftMarg + 200, y, weatherInfoFontSize, `Low  ${temp.min}`, weatherInfoFont));
-					overlays.push(new Label(leftMarg + 400, y, weatherInfoFontSize, `High ${temp.max}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `feels_like_morn ${feels_like.morn}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `feels_like_day ${feels_like.day}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `feels_like_eve ${feels_like.eve}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `feels_like_night ${feels_like.night}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `pressure ${pressure}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `humidity ${humidity}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `dew_point ${dew_point}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `wind_speed ${wind_speed}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `wind_deg ${wind_deg}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `wind_gust ${wind_gust}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg + 400, y, weatherInfoFontSize, `weather_id ${weatherId}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg + 500, y, weatherInfoFontSize, `weather_main ${weatherMain}`, weatherInfoFont));
-					overlays.push(new Label(leftMarg + 600, y, weatherInfoFontSize, `${weatherDescription}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg + 900, y, weatherInfoFontSize, `icon ${weatherIcon}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `clouds ${clouds}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `pop ${pop}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `rain ${rain || 0}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `snow ${snow || 0}`, weatherInfoFont));
-					// overlays.push(new Label(leftMarg, y, weatherInfoFontSize, `uvi ${uvi}`, weatherInfoFont));
+					overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `${dayOfWeekAbbreviation }`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `timezone ${weatherData.data.timezone}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `sunrise ${formattedSunrise}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `sunset ${formattedSunset}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `moonrise ${formattedMoonrise}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `moonset ${formattedMoonset}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `moon_phase ${moon_phase}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `temp_morn ${temp.morn}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `temp_day ${temp.day}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `temp_eve ${temp.eve}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `temp_night ${temp.night}`, weatherInfoFont));
+					overlays.push(new Label(leftMarg + indent + 100, y, weatherInfoFontSize, `Low  ${temp.min}`, weatherInfoFont));
+					overlays.push(new Label(leftMarg + indent + 300, y, weatherInfoFontSize, `High ${temp.max}`, weatherInfoFont));
+					overlays.push(new Poster(leftMarg + indent + 450, y - 10, `https://openweathermap.org/img/wn/${weatherIcon}.png`,iconSize,iconSize));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `feels_like_morn ${feels_like.morn}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `feels_like_day ${feels_like.day}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `feels_like_eve ${feels_like.eve}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `feels_like_night ${feels_like.night}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `pressure ${pressure}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `humidity ${humidity}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `dew_point ${dew_point}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `wind_speed ${wind_speed}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `wind_deg ${wind_deg}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `wind_gust ${wind_gust}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent + 400, y, weatherInfoFontSize, `weather_id ${weatherId}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent + 500, y, weatherInfoFontSize, `weather_main ${weatherMain}`, weatherInfoFont));
+					overlays.push(new Label(leftMarg + indent + 500, y, weatherInfoFontSize, `${weatherDescription}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent + 900, y, weatherInfoFontSize, `icon ${weatherIcon}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `clouds ${clouds}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `pop ${pop}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `rain ${rain || 0}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `snow ${snow || 0}`, weatherInfoFont));
+					// overlays.push(new Label(leftMarg + indent, y, weatherInfoFontSize, `uvi ${uvi}`, weatherInfoFont));
 
 					y += lineSpacing;
 				});
-				break;
-			case 'INFO':
-				overlays.push(new Label(0, 0, 12, "Weather", "tmp:/fonts/COURBD.TTF"));
+				
+
+
+				let lines = [
+					"This screen is under constuction.",
+					"Data: openweathermap.org",
+					"%bw mb used",
+					`lat ${weatherData.lat} : lon ${weatherData.lon}`
+				];
+
+				y += 20;
+				lineSpacing = 14;
+				lines.forEach((lineText, i) => {
+					overlays.push(new Label(leftMarg + 10, y + (lineSpacing * i), 12, lineText, "tmp:/fonts/COURBD.TTF"));
+				});
 				break;
 			default:
 				overlays.push(new Poster(0, 0, "https://www.360tv.net/roku/theme/overlays/360.png"));
@@ -367,6 +430,7 @@ export class RokuAPI {
 		
 		const overlay = {
 			duration: duration,
+			expires : expires,
 			overlayName: overlayName,
 			loop: loop,
 			overlays: overlays

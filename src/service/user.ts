@@ -13,8 +13,8 @@ export class User {
 	public static Login(req: any) {
 		let results : any;
 		return new Promise((result, fail) => {
-
-			let query = `INSERT INTO [360_development].[360].[users] (Name,
+			
+			let query = `INSERT INTO users (Name,
 				FirstName,
 				LastName,
 				avatar,
@@ -63,7 +63,7 @@ export class User {
 				.then((data: any) => { results = data.recordsets; })
 				.catch((error: any) => { console.log(error); });
 			console.log(results)	
-			Sql.query(`select * from [360_development].[360].[users] where idToken = ${req.idToken}`)
+			Sql.query(`select * from users where idToken = ${req.idToken}`)
 			
 			.then((records: any) => { results = records.recordsets; })
 				.catch((error: any) => { console.log(error); })
