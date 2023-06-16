@@ -28,7 +28,7 @@ export class Controller {
 		_.map(Controller.controllers, (con: any) => {
 			//console.log(con)
 			con.socket.send(JSON.stringify({
-				...(requireResponse ? { reqId: utils.genId() } : { msgId: utils.genId() }),
+				...(requireResponse ? { reqId: utils.generateId() } : { msgId: utils.generateId() }),
 				...msg
 			}));
 		});

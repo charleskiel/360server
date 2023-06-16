@@ -1,0 +1,25 @@
+version: "3.7"
+
+services:
+  ts-node-docker:  # service name
+    build:
+      context: .
+      dockerfile: dockerfile.dev
+      target: base
+    volumes:
+      - .:/app
+      - /var/www/360tv.net:/var/www/360tv.net
+      - ./nodemon.json:/home/node/app/nodemon.json  
+      - /etc/letsencrypt:/etc/letsencrypt
+
+    container_name: 360server
+    ports:
+      - "5000:5000"
+      - "9222:9222"
+
+    command: npm run dev  # debugging command
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
