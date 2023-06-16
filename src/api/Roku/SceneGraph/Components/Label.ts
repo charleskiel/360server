@@ -3,9 +3,13 @@ import LabelBase from './LabelBase';
 
 export default class Label extends RokuNode implements LabelBase {
 	constructor(
-		public text: string = "",
+		public x: number,
+		public y: number,
+		public fontSize: number = 24,
+		public text: string,
+		public font: string = "tmp:/fonts/COURBD.TTF",
+		public triggerTime: number = 0.0,
 		public color: string = "0xddddddff",
-		public font: string = "system default",
 		public horizAlign: string = "left",
 		public vertAlign: string = "top",
 		public width: number = 0,
@@ -18,14 +22,11 @@ export default class Label extends RokuNode implements LabelBase {
 		public wordBreakChars: string = "",
 		public ellipsisText: string = "...",
 		public isTextEllipsized: boolean = false,
-		public fontSize: number = 24,
 		public lineSpacing: number = 0,
 		public truncateOnDelimiter: string = "",
 		public leadingEllipsis: boolean = false,
-		public x: number = 0,
-		public y: number = 0,
-		public triggerTime: number = 0.0,
+		
 	) {
-		super(x, y, "Label", triggerTime);
+		super("Label", x, y, triggerTime);
 	}
 }

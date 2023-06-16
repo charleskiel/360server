@@ -1,17 +1,20 @@
 FROM node:14 as base
 
-WORKDIR /
+WORKDIR /var/www/360server
 
-COPY ./package.json ./
+# Copy package.json and package-lock.json files
+COPY package.json package-lock.json ./
 
-RUN npm install 
+# Install dependencies
+RUN npm ci --only=production
 
-FROM base as production
-
-ENV NODE_PATH=./build
-
-RUN npm run debug
-
-# RUN yarn install --dev  # installs our app dev dependencies
-
+# Copy the rest of the source code
+COPY . .
+COPY /etc/letsencrypt/live/360tv.net/privkey.pem /etc/letsencrypt/live/360tv.net/privkey.pem
+COPY /etc/letsencrypt/live/360tv.net/fullchain.pem /etc/letsencrypt/live/360tv.net/fullchain.pem
+# Expose ports
 EXPOSE 9222
+EXPOSE 5000
+
+# Start the application in development mode
+CMD ["npm", "run", "debug"]

@@ -25,16 +25,15 @@ export class HTTP {
 		httpApp.use('/', express.static('/var/www/360tv.net'));
 
 		httpApp.get('/api/v2/videos', (req, res) => {
-			Sql.query("select * from [360_development].[360].[videos] order by artist, title, altId")
-				.then((result: any) => { res.json(result.recordsets[0]); })
+			Sql.query("select * from videos order by artist, title, altId")
+				.then((result: any) => { res.json(result); })
 				.catch((error: any) => { console.log(error) })
 		});
 
 		
 		httpApp.get('/api/v2/nowPlaying', (req, res) => {
-			Sql.query(`SELECT top 10 * FROM [360_development].[360].[runlog] left join 
-			[360_development].[360].[videos] on runlog.contentid = videos.id and runlog.contentaltid = videos.altId where runlog.channel = ${req.query.channel} and runlog.contentType = 0 order by datetime desc`)
-				.then((result: any) => { res.json(result.recordsets[0]); })
+			Sql.query(`SELECT * FROM runlog left join videos on runlog.contentid = videos.id and runlog.contentaltid = videos.altId where runlog.channel = ${req.query.channel} and runlog.contentType = 0 order by datetime desc limit 10`)
+				.then((result: any) => { res.json(result); })
 				.catch((error: any) => { console.log(error) })
 		});
 		

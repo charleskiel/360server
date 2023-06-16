@@ -1,5 +1,5 @@
 import {
-	MusicVideo, request, Sql, moment, DownloadFile, User, Channel, Sockets, Content, Runlog, LogEntry, Library
+	MusicVideo, request, Sql, moment, DownloadFile, User, Channel, Content, Runlog, LogEntry, Library
 } from '../modules'
 import { Auth } from '../auth/auth.js';
 import { result, toUpper } from 'lodash';

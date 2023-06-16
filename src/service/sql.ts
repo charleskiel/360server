@@ -1,23 +1,20 @@
 import moment = require('moment');
-import * as sql from 'mssql';
-// const Auth = require('../auth/auth.js')
+import * as mysql from 'mysql';
+//const Auth = require('./auth/auth.js')
 // @ts-ignore
-import { Auth } from '../auth/auth';
+import { Auth } from '../auth/auth.js';
 
 export class Sql {
-
-	private static config = {
-		database: '360',
-		server: Auth.mysql.host,
+	private static con = mysql.createConnection({
+		database: '360_development',
+		host: Auth.mysql.host,
 		user: Auth.mysql.user,
 		password: Auth.mysql.password,
-		encrypt: false
-	};
+		multipleStatements: true
+	});
 	
-	public static init() {
-		// setInterval(() => { Sql.query('select 1'); }, 30000);
-
-	}
+	public static init() { setInterval(() => { Sql.query('select 1')
+	}, 30000)}
 	
 	private static readCount = 0;
 	private static writeCount = 0;
@@ -40,26 +37,19 @@ export class Sql {
 		// let ts = Date.now();
 		// console.log(query)
 		// console.log(query)
-		return new Promise((result, fail) => {
-			sql.connect(this.config, function (err) {
-				if (err) console.log(err)
-				let request = new sql.Request();
-
-				request.query(query, function (error, data) {
-					
-					if (error !== null) {
-						Sql.errorCount += 1;
-						console.log(moment(Date.now()).format(), error, query);
-						fail(error);
-					};
-					if (data) {
-						if (query.includes("select")) { Sql.addReadCount(); } else { Sql.addWriteCount(); }
-						// console.log(data.rowsAffected)
-						result(data);
-					}
-				});
-			})
-
+		return new Promise((result, fail) => {module.exports.writecount += 1;
+			Sql.con.query(query, function (error, results: any, fields) {
+				
+				if (error !== null) {
+					Sql.errorCount += 1;
+					console.log(moment(Date.now()).format(), error, query);
+					fail(error);
+				};
+				if (results) {
+					if (query.includes("select")) { Sql.addReadCount(); } else { Sql.addWriteCount(); }
+					result(results);
+				}
+			});
 		});
 	}
 

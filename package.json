@@ -6,7 +6,7 @@
   "scripts": {
     "start": "NODE_PATH=./dist node dist/app.js",
     "dev": "nodemon src/app.ts -L",
-    "debug": "nodemon --inspect src/app.ts",
+    "debug": "nodemon --inspect=0.0.0.0:9222 src/app.ts",
     "test": "jest"
   },
   "keywords": [],
@@ -15,12 +15,14 @@
     "@types/mssql": "^8.1.1",
     "@types/mysql": "^2.15.17",
     "@types/socket.io": "^2.1.13",
+    "axios": "^1.4.0",
     "eventemitter2": "^6.4.3",
     "express": "^4.17.1",
     "express-subdomain": "^1.0.5",
     "lodash": "^4.17.20",
     "moment": "^2.29.1",
     "mysql": "^2.18.1",
+    "node-fetch": "^3.3.1",
     "request": "^2.88.2",
     "socket.io": "^3.1.2",
     "uuid": "^8.3.2",

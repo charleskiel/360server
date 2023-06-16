@@ -17,7 +17,6 @@ export { Library } from './server/library'
 export { User } from './server/users'
 export { RokuAPI } from './api/Roku/roku'
 export { HTTP } from './service/http'
-export { Sockets } from './service/socket/Sockets'
 
 const websiteEvent = new EventEmitter2({ wildcard: true });
 const nginxEvent = new EventEmitter2({ wildcard: true });
