@@ -47,7 +47,7 @@ class WebSocketClient {
 
 	public static Send(message: any): void {
 		if (!WebSocketClient.websocket) {
-			console.error('WebSocket connection is not established.');
+			// console.error('WebSocket connection is not established.');
 			return;
 		}
 

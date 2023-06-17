@@ -12,10 +12,15 @@ export class Sql {
 		password: Auth.mysql.password,
 		multipleStatements: true
 	});
-	
-	public static init() { setInterval(() => { Sql.query('select 1')
-	}, 30000)}
-	
+
+	public static init(enabled = true) {
+		Sql.enabled = enabled;
+		if (enabled) setInterval(() => {
+			Sql.query('select 1');
+		}, 30000);
+	}
+	private static enabled = true;
+
 	private static readCount = 0;
 	private static writeCount = 0;
 	private static errorCount = 0;
@@ -33,13 +38,14 @@ export class Sql {
 	public static addWriteCount() { Sql.writeCount += 1; }
 
 
-	public static query(query : string){
+	public static query(query: string) {
 		// let ts = Date.now();
 		// console.log(query)
 		// console.log(query)
-		return new Promise((result, fail) => {module.exports.writecount += 1;
-			Sql.con.query(query, function (error, results: any, fields) {
-				
+		return new Promise((result, fail) => {
+			module.exports.writecount += 1;
+			if (Sql.enabled && !query.includes("INSERT ON DUPLICATE")) Sql.con.query(query, function (error, results: any, fields) {
+
 				if (error !== null) {
 					Sql.errorCount += 1;
 					console.log(moment(Date.now()).format(), error, query);
@@ -51,6 +57,14 @@ export class Sql {
 				}
 			});
 		});
+		
 	}
 
+	public static end() {
+		Sql.con.end();
+	}
+
+	public static connect() {
+		Sql.con.connect();
+	}
 }

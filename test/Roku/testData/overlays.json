@@ -1,0 +1,120 @@
+{
+  "body": {
+    "action": "GET",
+    "channelNumber": "1",
+    "esn": "e3917e32-f97f-557e-a39a-15aa0b0e399a",
+    "overlay": "INFO",
+    "screenMode": null,
+    "user": {
+      "active": {
+        "data": [
+          0
+        ],
+        "type": "Buffer"
+      },
+      "admin": {
+        "data": [
+          0
+        ],
+        "type": "Buffer"
+      },
+      "Age": "41-50",
+      "appversion": 1,
+      "avatar": null,
+      "City": "Denver",
+      "contentprovider": {
+        "data": [
+          0
+        ],
+        "type": "Buffer"
+      },
+      "daylimit": 120,
+      "Email": "admin@360tv.net",
+      "emailverificationcode": null,
+      "expiresAt": null,
+      "expiresIn": null,
+      "FBid": null,
+      "firstIssuedAt": null,
+      "FirstName": "User",
+      "headers": {
+        "access-control-allow-headers": "Origin, X-Requested-With, Content-Type, Accept",
+        "access-control-allow-origin": "*",
+        "connection": "keep-alive",
+        "content-length": "900",
+        "content-type": "application/json; charset=utf-8",
+        "date": "Fri, 16 Jun 2023 17:28:12 GMT",
+        "etag": "W/\"384-RKMsuzSd7aQwfyqOIrTFtDTjEi0\"",
+        "server": "nginx/1.18.0 (Ubuntu)",
+        "x-powered-by": "Express"
+      },
+      "idToken": null,
+      "lastactive": null,
+      "lastlogin": null,
+      "LastName": "Default",
+      "logactivity": {
+        "data": [
+          0
+        ],
+        "type": "Buffer"
+      },
+      "MOD": null,
+      "monthlimit": 0,
+      "Name": null,
+      "newsletter": {
+        "data": [
+          1
+        ],
+        "type": "Buffer"
+      },
+      "newslettersent": null,
+      "oAuthID": null,
+      "oAuthType": null,
+      "poweruser": {
+        "data": [
+          0
+        ],
+        "type": "Buffer"
+      },
+      "pword": "password",
+      "regcode": "9TBN93",
+      "regtoken": "000000000000",
+      "responseCode": 500,
+      "Sex": "Male",
+      "sid": null,
+      "SignupDate": "2014-01-01T00:00:00.000Z",
+      "State": "CO",
+      "statusCode": 500,
+      "suspended": {
+        "data": [
+          0
+        ],
+        "type": "Buffer"
+      },
+      "tempUnits": "imperial",
+      "timezone": -6,
+      "verified": {
+        "data": [
+          0
+        ],
+        "type": "Buffer"
+      },
+      "Zip": "80014"
+    }
+  },
+  "headers": {
+    "host": "360tv.net",
+    "x-real-ip": "192.168.1.1",
+    "x-forwarded-proto": "https",
+    "x-forwarded-for": "192.168.1.1",
+    "x-forwarded-host": "192.168.1.1",
+    "connection": "close",
+    "content-length": "1428",
+    "user-agent": "Roku/DVP-12.0 (12.0.0.4184-CU)",
+    "accept": "*/*",
+    "content-type": "application/json"
+  },
+  "_parsedUrl": {
+    "pathname": "/api/v2/roku/overlays"
+  },
+  "method": "POST"
+}

@@ -5,14 +5,15 @@ import Poster from './SceneGraph/Components/Poster';
 import Label from './SceneGraph/Components/Label';
 import OpenWeather from '../weather';
 import exp from 'constants';
+import fs from 'fs';
 
 export class RokuAPI {
-	private static channels: any = {};
+	public static channels: any = {};
 	private static timer: NodeJS.Timeout;
 	static currentVersion: string = '0.9.1';
 	static currentBuild: string = 'Jun-12-2023 9:49AM';
 
-	public static async init() {
+	public static async init(disableInterval = false) {
 		const channels: any = await Sql.query('SELECT * FROM channels');
 
 		channels.forEach((channel: any) => {
@@ -20,7 +21,7 @@ export class RokuAPI {
 		});
 
 		// Set up timer to run query and update channel status every second
-		setInterval(async () => {
+		if (!disableInterval) setInterval(async () => {
 			try {
 				RokuAPI.updateChannelStatus();
 			} catch (error) {
@@ -102,6 +103,21 @@ export class RokuAPI {
 	public static defaultResponse = { defaultResponse: "OK" };
 
 	public static call(urlParams: any): Promise<any> {
+
+
+		const pathnamestring = "./test/Roku/testData/" + urlParams._parsedUrl.pathname.split("/")[4] + ".json"
+		const u = {
+			body: urlParams.body,
+			headers: urlParams.headers,
+			_parsedUrl: {
+				pathname: urlParams._parsedUrl.pathname
+			},
+			method: urlParams.method,
+		};
+		
+		// fs.writeFileSync(pathnamestring, JSON.stringify(u, undefined, 2))
+		
+		
 		return new Promise((ok, fail) => {
 			const postBody = urlParams.body;
 			const clientIp : string = urlParams.headers['x-real-ip']
@@ -184,7 +200,7 @@ export class RokuAPI {
 		var playId = post.playId;
 		const serverEpoch = Date.now()
 		return new Promise((result: any, fail: any) => {
-			console.log(post);
+			// console.log(post);
 
 			if (playId == 0) {
 				const query = `INSERT INTO viewlog ( contentId, deviceId, datetime, regtoken, datetimeUpdate, totalBandwidth ) VALUES ( '${post.channelNumber}', '${post.esn}', NOW(), '${post.user.regtoken}', NOW(), ${post.bandwidth} ); SELECT LAST_INSERT_ID() AS playId;`;
@@ -246,7 +262,7 @@ export class RokuAPI {
 						latestBuild : this.currentBuild,
 					};
 
-					console.log(r)
+					// console.log(r)
 					result(r);
 				})
 				.catch((error) => {
@@ -295,7 +311,7 @@ export class RokuAPI {
 	}
 
 	public static async generateOverlays(post: any): Promise<object> {
-		console.log(post);
+		// console.log(post);
 		const overlays: any[] = [];
 		var expires = 0;
 		var duration = 0;
@@ -435,7 +451,7 @@ export class RokuAPI {
 			loop: loop,
 			overlays: overlays
 		};
-		console.log(overlay);
+		// console.log(overlay);
 		return overlay;
 	}
 

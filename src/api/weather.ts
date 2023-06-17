@@ -21,7 +21,7 @@ export default class OpenWeather {
 			weatherData = apiResult.data
 			weatherData.location = location;
 			this.reports.set(regtoken, weatherData)
-			console.log(this.reports.get(regtoken))
+			// console.log(this.reports.get(regtoken))
 
 			weatherData.minutely.forEach((minutelyData: any) => {
 
@@ -163,14 +163,13 @@ export default class OpenWeather {
 		console.log(`getting weather data for ${location}`);
 		const apiUrl = `http://api.openweathermap.org/geo/1.0/direct?q=${location}&appid=${Auth.openWeather.key}`;
 		const apiResult = await axios.get(apiUrl);
-		console.log(apiResult.data);
+		// console.log(apiResult.data);
 		let result: WeatherLocation = {
 			lat: apiResult.data[0].lat,
 			lon: apiResult.data[0].lon,
 			name: apiResult.data[0].name,
 			state: apiResult.data[0].state,
 		};
-		return result;
 		return result;
 	}
 
